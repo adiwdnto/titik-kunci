@@ -280,6 +280,14 @@ app.get('/api/health', async (_req, res) => {
 app.post('/api/auth/register', async (req, res) => {
   const fullName = requireValue(req.body.fullName, 'Nama');
   const phone = requireValue(req.body.phone, 'Nomor telepon');
+  const [pendingApplications] = await pool.execute(
+    `SELECT 1 FROM pengajuan_bengkel
+     WHERE phone_number = ? AND application_status = 'MENUNGGU' LIMIT 1`,
+    [phone],
+  );
+  if (pendingApplications.length) {
+    throw new HttpError(409, 'Nomor telepon sedang digunakan pada pengajuan bengkel yang menunggu verifikasi.');
+  }
   const password = req.body.password;
   const passwordHash = await hashPassword(password);
   const connection = await pool.getConnection();
@@ -305,6 +313,42 @@ app.post('/api/auth/register', async (req, res) => {
   } finally {
     connection.release();
   }
+});
+
+app.post('/api/workshop-applications', async (req, res) => {
+  const fullName = requireValue(req.body.fullName, 'Nama penanggung jawab');
+  const phone = requireValue(req.body.phone, 'Nomor telepon');
+  const workshopName = requireValue(req.body.workshopName, 'Nama bengkel');
+  const address = requireValue(req.body.address, 'Alamat bengkel');
+  if (fullName.length > 100 || phone.length > 20 || workshopName.length > 120 || address.length > 1000) {
+    throw new HttpError(400, 'Periksa panjang nama, nomor telepon, atau alamat bengkel.');
+  }
+  const subscriptionPlan = req.body.subscriptionPlan;
+  if (!['PRO', 'ULTRA', 'ENTERPRISE'].includes(subscriptionPlan)) {
+    throw new HttpError(400, 'Pilih paket langganan yang tersedia.');
+  }
+  const [existing] = await pool.execute(
+    `SELECT 1 FROM akun WHERE phone_number = ?
+     UNION ALL SELECT 1 FROM bengkel WHERE phone_number = ?
+     UNION ALL SELECT 1 FROM pengajuan_bengkel
+       WHERE phone_number = ? AND application_status = 'MENUNGGU'
+     LIMIT 1`,
+    [phone, phone, phone],
+  );
+  if (existing.length) {
+    throw new HttpError(409, 'Nomor telepon sudah terdaftar atau memiliki pengajuan yang sedang ditinjau.');
+  }
+  const passwordHash = await hashPassword(req.body.password);
+  const [result] = await pool.execute(
+    `INSERT INTO pengajuan_bengkel
+      (full_name, phone_number, password_hash, workshop_name, address, subscription_plan)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [fullName, phone, passwordHash, workshopName, address, subscriptionPlan],
+  );
+  res.status(201).json({
+    application_id: result.insertId,
+    application_status: 'MENUNGGU',
+  });
 });
 
 app.post('/api/auth/login', async (req, res) => {
@@ -665,6 +709,90 @@ app.get('/api/admin/workshops', authenticate, allowRoles('ADMIN_BENGKEL', 'SUPER
     const { location_wkt, ...workshop } = row;
     return { ...workshop, location: pointFromWkt(location_wkt) };
   }) });
+});
+
+app.get('/api/admin/workshop-applications', authenticate, allowRoles('SUPER_ADMIN'), async (_req, res) => {
+  const [applications] = await pool.execute(
+    `SELECT application_id, full_name, phone_number, workshop_name, address,
+            subscription_plan, application_status, created_at
+     FROM pengajuan_bengkel WHERE application_status = 'MENUNGGU'
+     ORDER BY created_at`,
+  );
+  res.json({ applications });
+});
+
+app.patch('/api/admin/workshop-applications/:id', authenticate, allowRoles('SUPER_ADMIN'), async (req, res) => {
+  const applicationId = Number(req.params.id);
+  const action = req.body.action;
+  if (!Number.isInteger(applicationId) || !['APPROVE', 'REJECT'].includes(action)) {
+    throw new HttpError(400, 'Pengajuan atau tindakan tidak valid.');
+  }
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [[application]] = await connection.execute(
+      `SELECT application_id, full_name, phone_number, password_hash, workshop_name,
+              address, subscription_plan, application_status
+       FROM pengajuan_bengkel WHERE application_id = ? FOR UPDATE`,
+      [applicationId],
+    );
+    if (!application) throw new HttpError(404, 'Pengajuan bengkel tidak ditemukan.');
+    if (application.application_status !== 'MENUNGGU') {
+      throw new HttpError(409, 'Pengajuan ini sudah ditinjau.');
+    }
+
+    if (action === 'REJECT') {
+      await connection.execute(
+        `UPDATE pengajuan_bengkel
+         SET application_status = 'DITOLAK', password_hash = NULL,
+             reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP
+         WHERE application_id = ?`,
+        [req.auth.sub, applicationId],
+      );
+      await connection.commit();
+      return res.json({ application_id: applicationId, application_status: 'DITOLAK' });
+    }
+
+    if (!application.password_hash) {
+      throw new HttpError(409, 'Pengajuan ini tidak memiliki kata sandi akun yang valid.');
+    }
+    const location = parseCoordinates(req.body.lat, req.body.lng);
+    const [workshopResult] = await connection.execute(
+      `INSERT INTO bengkel
+        (workshop_name, phone_number, address, location, approval_status, subscription_plan)
+       VALUES (?, ?, ?, ST_GeomFromText(?, 4326), 'AKTIF', ?)`,
+      [
+        application.workshop_name,
+        application.phone_number,
+        application.address,
+        pointWkt(location),
+        application.subscription_plan,
+      ],
+    );
+    await connection.execute(
+      `INSERT INTO akun (full_name, phone_number, password_hash, role, workshop_id)
+       VALUES (?, ?, ?, 'ADMIN_BENGKEL', ?)`,
+      [application.full_name, application.phone_number, application.password_hash, workshopResult.insertId],
+    );
+    await connection.execute(
+      `UPDATE pengajuan_bengkel
+       SET application_status = 'DISETUJUI', password_hash = NULL, workshop_id = ?,
+           reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP
+       WHERE application_id = ?`,
+      [workshopResult.insertId, req.auth.sub, applicationId],
+    );
+    await connection.commit();
+    res.json({
+      application_id: applicationId,
+      application_status: 'DISETUJUI',
+      workshop_id: workshopResult.insertId,
+    });
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
 });
 
 app.post('/api/admin/workshops', authenticate, allowRoles('SUPER_ADMIN'), async (req, res) => {

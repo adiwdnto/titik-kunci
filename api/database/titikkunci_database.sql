@@ -13,6 +13,7 @@ CREATE TABLE `bengkel` (
   `address` text NOT NULL,
   `location` point NOT NULL SRID 4326,
   `approval_status` enum('MENUNGGU','AKTIF','NONAKTIF') NOT NULL DEFAULT 'MENUNGGU',
+  `subscription_plan` enum('PRO','ULTRA','ENTERPRISE') DEFAULT NULL,
   `opening_hours` json DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`workshop_id`),
@@ -33,6 +34,25 @@ CREATE TABLE `akun` (
   UNIQUE KEY `uq_akun_phone` (`phone_number`),
   KEY `idx_akun_workshop` (`workshop_id`),
   CONSTRAINT `fk_akun_workshop` FOREIGN KEY (`workshop_id`) REFERENCES `bengkel` (`workshop_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `pengajuan_bengkel` (
+  `application_id` int NOT NULL AUTO_INCREMENT,
+  `full_name` varchar(100) NOT NULL,
+  `phone_number` varchar(20) NOT NULL,
+  `password_hash` varchar(180) DEFAULT NULL,
+  `workshop_name` varchar(120) NOT NULL,
+  `address` text NOT NULL,
+  `subscription_plan` enum('PRO','ULTRA','ENTERPRISE') NOT NULL,
+  `application_status` enum('MENUNGGU','DISETUJUI','DITOLAK') NOT NULL DEFAULT 'MENUNGGU',
+  `workshop_id` int DEFAULT NULL,
+  `reviewed_by` int DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`application_id`),
+  KEY `idx_pengajuan_bengkel_status` (`application_status`,`created_at`),
+  CONSTRAINT `fk_pengajuan_bengkel_workshop` FOREIGN KEY (`workshop_id`) REFERENCES `bengkel` (`workshop_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_pengajuan_bengkel_reviewer` FOREIGN KEY (`reviewed_by`) REFERENCES `akun` (`account_id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `pelanggan` (

@@ -147,8 +147,122 @@ function StatusBadge({ status }) {
   </span>;
 }
 
-function LoginScreen({ onLogin, onRegister, busy, error }) {
-  const [registerMode, setRegisterMode] = useState(false);
+const subscriptionPlans = [
+  {
+    id: 'PRO',
+    name: 'Pro',
+    price: '50.000',
+    description: 'Tampil di platform dan terima panggilan langsung.',
+    features: ['Profil bengkel di platform', 'Pelanggan menghubungi lewat telepon/WhatsApp', 'Belum termasuk fitur booking aplikasi'],
+  },
+  {
+    id: 'ULTRA',
+    name: 'Ultra',
+    price: '100.000',
+    description: 'Kelola permintaan servis dengan booking di aplikasi.',
+    features: ['Semua fitur Pro', 'Fitur booking di aplikasi'],
+  },
+  {
+    id: 'ENTERPRISE',
+    name: 'Enterprise',
+    price: '250.000',
+    description: 'Kembangkan layanan untuk banyak cabang bengkel.',
+    features: ['Semua fitur Ultra', 'Dukungan banyak cabang bengkel'],
+  },
+];
+
+function LandingPage({ onLogin, onOwnerRegister, onWorkshopRegister }) {
+  const features = [
+    { icon: MapPin, title: 'Temukan bantuan terdekat', description: 'Lihat bengkel, montir, dan toko sparepart di sekitar lokasi Anda.' },
+    { icon: Navigation, title: 'Lokasi dan estimasi jelas', description: 'Tentukan titik kendaraan, lihat rute, jarak, dan estimasi biaya layanan.' },
+    { icon: Wrench, title: 'Pantau progres layanan', description: 'Ikuti status permintaan bantuan dari diterima hingga pekerjaan selesai.' },
+  ];
+
+  return (
+    <main className="landing-page">
+      <header className="landing-header">
+        <a className="brand-link" href="#beranda" aria-label="Titik Kunci beranda"><Brand /></a>
+        <nav className="landing-nav" aria-label="Navigasi landing page">
+          <a href="#fitur">Fitur</a>
+          <a href="#paket">Paket bengkel</a>
+          <button className="landing-login" onClick={onLogin}>Masuk</button>
+          <button className="button button-dark landing-nav-cta" onClick={onOwnerRegister}>Daftar pemilik</button>
+        </nav>
+      </header>
+
+      <section className="landing-hero" id="beranda">
+        <div className="landing-hero-copy">
+          <span className="eyebrow eyebrow-light"><span className="live-dot" /> PANGKALPINANG & BALUNIJUK</span>
+          <h1>Di jalan, jangan<br />hadapi sendiri.</h1>
+          <p>Titik Kunci menghubungkan pemilik kendaraan dengan bengkel dan montir terdekat untuk bantuan yang lebih mudah, jelas, dan terpantau.</p>
+          <div className="landing-hero-actions">
+            <button className="button button-yellow" onClick={onOwnerRegister}>Daftar sebagai pemilik <ArrowRight size={17} /></button>
+            <button className="landing-text-link" onClick={() => onWorkshopRegister()}>Gabung sebagai bengkel <ArrowRight size={16} /></button>
+          </div>
+          <div className="landing-proof"><ShieldCheck size={17} /><span>Lokasi terarah · Progres transparan · Pilihan bengkel lokal</span></div>
+        </div>
+        <div className="landing-hero-card" aria-label="Alur bantuan kendaraan">
+          <div className="landing-map-grid" aria-hidden="true"><span /><span /><span /><span /><span /><span /></div>
+          <div className="landing-route"><i /><span /><i /></div>
+          <div className="landing-map-pin landing-pin-workshop"><Wrench size={17} /></div>
+          <div className="landing-map-pin landing-pin-owner"><MapPin size={18} /></div>
+          <div className="landing-distance"><strong>2,4 KM</strong><small>CONTOH JARAK RUTE</small></div>
+          <div className="landing-arrival"><span className="landing-arrival-icon"><Check size={17} /></span><span><strong>Bantuan terhubung</strong><small>Montir menuju lokasi Anda</small></span><ArrowRight size={16} /></div>
+        </div>
+      </section>
+
+      <section className="landing-features" id="fitur">
+        <div className="landing-section-heading">
+          <span className="eyebrow">LAYANAN TITIK KUNCI</span>
+          <h2>Lebih siap saat<br /><em>kendaraan bermasalah.</em></h2>
+          <p>Satu platform untuk mencari bantuan, meminta layanan, dan mengikuti perkembangannya.</p>
+        </div>
+        <div className="landing-feature-grid">
+          {features.map(({ icon: Icon, title, description }, index) => (
+            <article className="landing-feature-card" key={title}>
+              <span className="landing-feature-icon"><Icon size={20} /></span>
+              <span className="section-index">0{index + 1} / FITUR</span>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="landing-workshop-banner">
+        <div><span className="eyebrow eyebrow-light">UNTUK MITRA BENGKEL</span><h2>Jangkau lebih banyak<br /><em>pelanggan di sekitar.</em></h2><p>Daftarkan bengkel Anda ke platform, pilih paket yang sesuai, dan tunggu verifikasi tim Titik Kunci.</p></div>
+        <button className="button button-yellow" onClick={() => onWorkshopRegister()}>Lihat paket & daftar <ArrowRight size={17} /></button>
+      </section>
+
+      <section className="landing-pricing" id="paket">
+        <div className="landing-section-heading">
+          <span className="eyebrow">LANGGANAN MITRA BENGKEL</span>
+          <h2>Pilih paket yang<br /><em>sesuai kebutuhan.</em></h2>
+          <p>Ada biaya langganan bulanan bagi bengkel yang bergabung dengan platform.</p>
+        </div>
+        <div className="landing-plan-grid">
+          {subscriptionPlans.map((plan) => (
+            <article className={`landing-plan-card ${plan.id === 'ULTRA' ? 'landing-plan-featured' : ''}`} key={plan.id}>
+              {plan.id === 'ULTRA' && <span className="landing-plan-badge">BOOKING APLIKASI</span>}
+              <span className="eyebrow">{plan.name.toUpperCase()}</span>
+              <h3>{plan.name}</h3>
+              <p className="landing-plan-description">{plan.description}</p>
+              <div className="landing-plan-price"><span>Rp</span>{plan.price}<small>/ bulan</small></div>
+              <ul>{plan.features.map((feature) => <li key={feature}><Check size={15} />{feature}</li>)}</ul>
+              <button className={plan.id === 'ULTRA' ? 'button button-dark' : 'button button-outline'} onClick={() => onWorkshopRegister(plan.id)}>Pilih {plan.name} <ArrowRight size={15} /></button>
+            </article>
+          ))}
+        </div>
+        <p className="landing-pricing-note">Pendaftaran akan ditinjau Super Admin. Pembayaran langganan tidak diproses melalui aplikasi.</p>
+      </section>
+
+      <footer className="landing-footer"><Brand /><span>Lokasi presisi. Bantuan tanpa menunggu lama.</span><button onClick={onLogin}>Masuk ke aplikasi <ArrowRight size={14} /></button></footer>
+    </main>
+  );
+}
+
+function LoginScreen({ onLogin, onRegister, busy, error, initialRegisterMode = false, onBackToHome }) {
+  const [registerMode, setRegisterMode] = useState(initialRegisterMode);
   const [form, setForm] = useState({ fullName: '', phone: '', password: '' });
   const [formError, setFormError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -183,6 +297,7 @@ function LoginScreen({ onLogin, onRegister, busy, error }) {
       </section>
       <section className="auth-panel">
         <div className="auth-panel-inner">
+          <button type="button" className="auth-back" onClick={onBackToHome}>← Kembali ke beranda</button>
           <div className="auth-heading">
             <span className="eyebrow">{registerMode ? 'MULAI PERJALANAN' : 'SELAMAT DATANG KEMBALI'}</span>
             <h2>{registerMode ? <>Buat akun<br />Titik Kunci.</> : <>Ada kendala?<br />Kita bantu.</>}</h2>
@@ -219,6 +334,77 @@ function LoginScreen({ onLogin, onRegister, busy, error }) {
             <span>Akun demo untuk presentasi tersedia di README proyek.</span>
           </div>
         </div>
+      </section>
+    </main>
+  );
+}
+
+function WorkshopApplicationScreen({ initialPlan, busy, onSubmit, onBackToHome }) {
+  const [form, setForm] = useState({
+    fullName: '',
+    phone: '',
+    workshopName: '',
+    address: '',
+    subscriptionPlan: initialPlan || 'PRO',
+    password: '',
+  });
+  const [error, setError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  async function submit(event) {
+    event.preventDefault();
+    setError('');
+    try {
+      await onSubmit(form);
+      setSubmitted(true);
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  return (
+    <main className="workshop-application-page">
+      <div className="workshop-application-aside">
+        <button className="auth-back workshop-home-link" onClick={onBackToHome}>← Beranda Titik Kunci</button>
+        <Brand inverse />
+        <span className="eyebrow eyebrow-light">MITRA BENGKEL TITIK KUNCI</span>
+        <h1>Usaha lokal.<br /><em>Jangkauan lebih luas.</em></h1>
+        <p>Lengkapi data bengkel dan pilih paket langganan. Pengajuan akan ditinjau sebelum akun bengkel diaktifkan.</p>
+        <div className="workshop-application-aside-note"><ShieldCheck size={18} /><span>Belum ada pembayaran saat mengirim pengajuan.</span></div>
+      </div>
+      <section className="workshop-application-form-wrap">
+        {submitted ? (
+          <div className="workshop-application-success">
+            <span className="workshop-success-icon"><Check size={25} /></span>
+            <span className="eyebrow">PENGAJUAN TERCATAT</span>
+            <h2>Terima kasih<br /><em>sudah mendaftar.</em></h2>
+            <p>Pengajuan bengkel Anda sudah masuk dan menunggu verifikasi Super Admin. Akun akan tersedia setelah pengajuan disetujui.</p>
+            <button className="button button-dark" onClick={onBackToHome}>Kembali ke beranda <ArrowRight size={16} /></button>
+          </div>
+        ) : (
+          <>
+            <div className="auth-heading">
+              <span className="eyebrow">PENGAJUAN MITRA BARU</span>
+              <h2>Daftar sebagai<br /><em>bengkel.</em></h2>
+              <p>Isi informasi penanggung jawab dan bengkel untuk memulai proses verifikasi.</p>
+            </div>
+            <form className="workshop-application-form" onSubmit={submit}>
+              <label className="field"><span>Nama penanggung jawab</span><input required maxLength="100" autoComplete="name" value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} /></label>
+              <label className="field"><span>Nomor telepon untuk akun & kontak bengkel</span><input required maxLength="20" autoComplete="tel" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="08xx xxxx xxxx" /></label>
+              <label className="field"><span>Nama bengkel</span><input required maxLength="120" value={form.workshopName} onChange={(event) => setForm({ ...form, workshopName: event.target.value })} /></label>
+              <label className="field"><span>Alamat bengkel</span><textarea required maxLength="1000" rows="2" value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} /></label>
+              <label className="field"><span>Pilih paket langganan per bulan</span>
+                <select required value={form.subscriptionPlan} onChange={(event) => setForm({ ...form, subscriptionPlan: event.target.value })}>
+                  {subscriptionPlans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name} — Rp{plan.price}/bulan</option>)}
+                </select>
+              </label>
+              <label className="field"><span>Kata sandi akun bengkel</span><input required minLength="10" maxLength="128" type="password" autoComplete="new-password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Minimal 10 karakter" /></label>
+              {error && <div className="inline-error" role="alert">{error}</div>}
+              <button className="button button-dark auth-submit" disabled={busy}>{busy ? 'Mengirim pengajuan...' : 'Kirim pengajuan'} <ArrowRight size={17} /></button>
+            </form>
+            <p className="workshop-application-login">Sudah punya akun? <button onClick={onBackToHome}>Kembali ke beranda untuk masuk</button></p>
+          </>
+        )}
       </section>
     </main>
   );
@@ -302,6 +488,8 @@ function EmptyState({ icon: Icon = ClipboardList, title, description }) {
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
   const [account, setAccount] = useState(null);
+  const [publicView, setPublicView] = useState('landing');
+  const [selectedWorkshopPlan, setSelectedWorkshopPlan] = useState('PRO');
   const [authLoading, setAuthLoading] = useState(Boolean(localStorage.getItem(TOKEN_KEY)));
   const [busy, setBusy] = useState(false);
   const [globalError, setGlobalError] = useState('');
@@ -309,6 +497,7 @@ function App() {
   const [orders, setOrders] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [workshops, setWorkshops] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [mechanics, setMechanics] = useState([]);
   const [zones, setZones] = useState([]);
   const [summary, setSummary] = useState({});
@@ -319,6 +508,7 @@ function App() {
   const [selectedVehicle, setSelectedVehicle] = useState('');
   const [activeView, setActiveView] = useState('dashboard');
   const [busyOrder, setBusyOrder] = useState(null);
+  const [busyApplication, setBusyApplication] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   const [vehicleForm, setVehicleForm] = useState({ brand: '', model: '', plateNumber: '' });
@@ -365,7 +555,10 @@ function App() {
         base.push(apiRequest('/admin/summary'));
         base.push(apiRequest('/admin/workshops'));
         base.push(apiRequest('/admin/mechanics'));
-        if (account.role === 'SUPER_ADMIN') base.push(apiRequest('/admin/zones'));
+        if (account.role === 'SUPER_ADMIN') {
+          base.push(apiRequest('/admin/zones'));
+          base.push(apiRequest('/admin/workshop-applications'));
+        }
       }
       const results = await Promise.all(base);
       setCatalog(results[0]);
@@ -381,6 +574,7 @@ function App() {
         setMechanics(results[4].mechanics);
         if (account.role === 'SUPER_ADMIN') {
           setZones(results[5].zones);
+          setApplications(results[6].applications);
           setZoneDrafts(Object.fromEntries(results[5].zones.map((zone) => [zone.zone_id, {
             baseRate: zone.base_rate, ratePerKm: zone.rate_per_km,
           }])));
@@ -458,6 +652,18 @@ function App() {
     }
   }
 
+  async function submitWorkshopApplication(form) {
+    setBusy(true);
+    try {
+      await apiRequest('/workshop-applications', {
+        method: 'POST',
+        body: JSON.stringify(form),
+      }, null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function signOut() {
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
@@ -466,6 +672,7 @@ function App() {
     setCatalog(null);
     setActiveView('dashboard');
     setGlobalError('');
+    setPublicView('landing');
   }
 
   async function locateMe() {
@@ -623,6 +830,22 @@ function App() {
     }
   }
 
+  async function reviewWorkshopApplication(applicationId, action, location) {
+    setBusyApplication(applicationId);
+    try {
+      await apiRequest(`/admin/workshop-applications/${applicationId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action, ...location }),
+      });
+      setGlobalError('');
+      await loadData();
+    } catch (error) {
+      setGlobalError(error.message);
+    } finally {
+      setBusyApplication(null);
+    }
+  }
+
   async function updateMechanic(mechanicId, status) {
     try {
       await apiRequest(`/admin/mechanics/${mechanicId}`, {
@@ -648,7 +871,36 @@ function App() {
   }
 
   if (authLoading) return <div className="loading-screen"><span className="loading-mark"><Wrench size={24} /></span><p>Menghubungkan perjalanan...</p></div>;
-  if (!account) return <LoginScreen onLogin={signIn} onRegister={signUp} busy={busy} error={globalError} />;
+  if (!account) {
+    if (publicView === 'workshop') {
+      return <WorkshopApplicationScreen
+        key={`workshop-${selectedWorkshopPlan}`}
+        initialPlan={selectedWorkshopPlan}
+        busy={busy}
+        onSubmit={submitWorkshopApplication}
+        onBackToHome={() => setPublicView('landing')}
+      />;
+    }
+    if (publicView === 'login' || publicView === 'owner-register') {
+      return <LoginScreen
+        key={publicView}
+        onLogin={signIn}
+        onRegister={signUp}
+        busy={busy}
+        error={globalError}
+        initialRegisterMode={publicView === 'owner-register'}
+        onBackToHome={() => setPublicView('landing')}
+      />;
+    }
+    return <LandingPage
+      onLogin={() => setPublicView('login')}
+      onOwnerRegister={() => setPublicView('owner-register')}
+      onWorkshopRegister={(plan = 'PRO') => {
+        setSelectedWorkshopPlan(plan);
+        setPublicView('workshop');
+      }}
+    />;
+  }
 
   const isOwner = account.role === 'PEMILIK';
   const isSuper = account.role === 'SUPER_ADMIN';
@@ -870,12 +1122,71 @@ function App() {
               {(catalog?.services || []).filter((service) => Number(service.workshop_id) === Number(account.workshop_id)).map((service) => <div className="service-list-row" key={service.service_id}><span><Wrench size={15} /></span><div><strong>{service.service_name}</strong><small>{service.description || 'Layanan bengkel'}</small></div><b>{money(service.base_price)}</b></div>)}
               {!(catalog?.services || []).some((service) => Number(service.workshop_id) === Number(account.workshop_id)) && <EmptyState icon={Wrench} title="Belum ada layanan" description="Tambahkan layanan yang tersedia di bengkel Anda." />}
             </article>}
+            {isSuper && <WorkshopApplicationReview applications={applications} busyApplication={busyApplication} onReview={reviewWorkshopApplication} />}
             {isSuper && <SuperAdminTools workshops={workshops} zones={zones} zoneDrafts={zoneDrafts} setZoneDrafts={setZoneDrafts} onSaveZone={saveZone} onRefresh={loadData} onError={setGlobalError} />}
           </section>
         )}
 
         <footer className="app-footer"><Brand /><span>Lokasi presisi. Bantuan tanpa menunggu lama.</span><span>© 2026 Titik Kunci</span></footer>
       </main>
+    </div>
+  );
+}
+
+function WorkshopApplicationReview({ applications, busyApplication, onReview }) {
+  return (
+    <article className="panel workshop-applications-panel">
+      <div className="panel-heading">
+        <div><span className="section-index">VERIFIKASI MITRA</span><h2>Pengajuan <em>bengkel.</em></h2></div>
+        <span className="small-count">{applications.length} MENUNGGU</span>
+      </div>
+      {applications.length > 0 ? (
+        <div className="workshop-application-list">
+          {applications.map((application) => (
+            <WorkshopApplicationCard
+              key={application.application_id}
+              application={application}
+              busy={busyApplication === application.application_id}
+              onReview={onReview}
+            />
+          ))}
+        </div>
+      ) : <EmptyState icon={Store} title="Tidak ada pengajuan baru" description="Pengajuan bengkel yang menunggu verifikasi akan muncul di sini." />}
+    </article>
+  );
+}
+
+function WorkshopApplicationCard({ application, busy, onReview }) {
+  const [location, setLocation] = useState({ lat: '', lng: '' });
+  const plan = subscriptionPlans.find((item) => item.id === application.subscription_plan);
+
+  function approve(event) {
+    event.preventDefault();
+    onReview(application.application_id, 'APPROVE', {
+      lat: Number(location.lat),
+      lng: Number(location.lng),
+    });
+  }
+
+  return (
+    <div className="workshop-application-review-card">
+      <div className="workshop-application-review-details">
+        <div><span className="eyebrow">{plan?.name || application.subscription_plan} · Rp{plan?.price || '—'}/bulan</span><h3>{application.workshop_name}</h3></div>
+        <span className="application-waiting">MENUNGGU</span>
+        <p><strong>Penanggung jawab:</strong> {application.full_name}</p>
+        <p><strong>Telepon:</strong> {application.phone_number}</p>
+        <p><strong>Alamat:</strong> {application.address}</p>
+        <small>Diajukan {new Date(application.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</small>
+      </div>
+      <form className="application-review-actions" onSubmit={approve}>
+        <span className="section-index">TITIK LOKASI BENGKEL UNTUK AKTIVASI</span>
+        <label className="field"><span>Latitude</span><input required type="number" min="-90" max="90" step="any" value={location.lat} onChange={(event) => setLocation({ ...location, lat: event.target.value })} /></label>
+        <label className="field"><span>Longitude</span><input required type="number" min="-180" max="180" step="any" value={location.lng} onChange={(event) => setLocation({ ...location, lng: event.target.value })} /></label>
+        <div className="application-review-buttons">
+          <button className="button button-outline button-small" type="button" disabled={busy} onClick={() => onReview(application.application_id, 'REJECT')}>Tolak</button>
+          <button className="button button-dark button-small" disabled={busy}>{busy ? 'Menyimpan...' : 'Setujui & aktifkan'}</button>
+        </div>
+      </form>
     </div>
   );
 }

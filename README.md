@@ -2,6 +2,8 @@
 
 Titik Kunci adalah aplikasi web untuk menemukan bengkel dan montir terdekat, meminta bantuan kendaraan berdasarkan lokasi, serta memantau tarif dan progres layanan.
 
+Landing page menjelaskan layanan untuk pemilik kendaraan dan menyediakan pendaftaran mitra bengkel. Langganan bengkel ditawarkan per bulan: Pro (Rp50.000, tanpa booking dalam aplikasi), Ultra (Rp100.000, termasuk booking), dan Enterprise (Rp250.000, termasuk fitur Ultra dan banyak cabang). Pengajuan bengkel ditinjau Super Admin sebelum akun diaktifkan; aplikasi belum memproses pembayaran langganan.
+
 ## Struktur
 
 - `frontend-titik-kunci` — React, Vite, Tailwind CSS, Leaflet/OpenStreetMap.
@@ -14,15 +16,15 @@ Titik Kunci adalah aplikasi web untuk menemukan bengkel dan montir terdekat, mem
 - MySQL 8.0.24+ (database menggunakan tipe spasial dengan SRID 4326).
 - Koneksi internet untuk tile OpenStreetMap dan rute OSRM.
 
-## Instalasi awal
+## Database final
 
-Import SQL hanya satu kali ke database kosong. Dari Command Prompt di folder proyek:
+`api\database\titikkunci_database.sql` adalah satu-satunya berkas SQL yang disediakan dan memuat skema serta data awal final. Import satu kali ke database kosong. Dari Command Prompt di folder proyek:
 
 ```bat
 mysql -u root -p < api\database\titikkunci_database.sql
 ```
 
-Jika menggunakan Laragon dengan kata sandi MySQL kosong, hilangkan `-p`. File SQL membuat `titikkunci_db`, seluruh tabel, indeks, relasi, dan data contoh; tidak ada proses migrasi terpisah.
+Jika menggunakan Laragon dengan kata sandi MySQL kosong, hilangkan `-p`. File SQL membuat `titikkunci_db`, seluruh tabel, indeks, relasi, dan data contoh; semua perubahan skema terbaru sudah disatukan di berkas final ini. Proyek tidak menyertakan berkas SQL migrasi terpisah.
 
 Salin konfigurasi contoh dan sesuaikan koneksi MySQL serta `JWT_SECRET` dengan string acak yang panjang. Di PowerShell dari folder proyek:
 
@@ -69,6 +71,7 @@ Akun dan data ini hanya untuk demo lokal. Ganti kata sandi dan data seed sebelum
 ## Fitur MVP
 
 - Pemilik mendaftar/masuk dengan nomor telepon, mendaftarkan kendaraan, memilih lokasi lewat GPS atau peta, melihat montir/bengkel/toko sparepart, membuat permintaan darurat, melihat estimasi biaya/rute, serta memantau atau membatalkan pesanan.
+- Pemilik bengkel dapat mengirim pengajuan dengan pilihan paket; Super Admin meninjau dan mengaktifkan bengkel serta akun admin setelah menetapkan titik lokasinya.
 - Admin bengkel memantau antrean bengkel, memperbarui status montir dan pesanan, mengelola profil lokasi, serta mencatat pembayaran tunai.
 - Super admin memantau keseluruhan operasi, menambah bengkel dan akun admin, mengelola tarif zona, serta menambah layanan bengkel.
 - Tarif menggunakan biaya dasar zona ditambah tarif per kilometer dari rute jalan OSRM. Pesanan tanpa montir siaga tetap dapat masuk antrean dan ditandai jelas.
